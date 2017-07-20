@@ -6,7 +6,7 @@ IMAGE_WIDTH = 384
 
 #tfrecords_filename = '../python/datasets/data/rctw/rctwTrain.tfrecords'
 
-tfrecords_filename = '/home/wangjianbo_i/google_model/MyCode/models/attention_ocr/python/datasets/data/fsns/train/train-00511-of-00512'
+tfrecords_filename = '/home/wangjianbo_i/models/attention_ocr/python/datasets/data/fsns/train/train-00000-of-00512'
 
 def read_and_decode(filename_queue):
     
@@ -20,15 +20,15 @@ def read_and_decode(filename_queue):
       features={
         'height': tf.FixedLenFeature([], tf.int64),
         'width': tf.FixedLenFeature([], tf.int64),
-        'encoded': tf.FixedLenFeature([], tf.string),
-	'text':tf.FixedLenFeature([], tf.string)
+        'image/encoded': tf.FixedLenFeature([], tf.string),
+	'image/text':tf.FixedLenFeature([], tf.string)
         })
 
     # Convert from a scalar string tensor (whose single string has
     # length mnist.IMAGE_PIXELS) to a uint8 tensor with shape
     # [mnist.IMAGE_PIXELS].
-    image = tf.decode_raw(features['encoded'], tf.uint8)
-    text = tf.decode_raw(features['text'], tf.uint8)
+    image = tf.decode_raw(features['image/encoded'], tf.uint8)
+    text = tf.decode_raw(features['image/text'], tf.uint8)
  
     height = tf.cast(features['height'], tf.int32)
     width = tf.cast(features['width'], tf.int32)
@@ -86,8 +86,8 @@ with tf.Session()  as sess:
         # Let's make sure it is random
 
         io.imshow(img[0, :, :, :])
-        io.show()
-
+        io.save("test.jpg")
+	print "store img!"
         io.imshow(img[1, :, :, :])
         io.show()
  

@@ -36,11 +36,11 @@ def getICDAR2017RCTWlexiconList(imgFoldPath,previousDic,previousList,indexStart,
                 # the latest "\n"
                 linei = linei.replace("\n", "")
                 linei=re.findall(patt,linei)[0]
-                #去除全部是#的串
+                #if the text is full of "#",break it
                 lineitmp=linei.replace("#","")
                 if lineitmp=="":
                     continue
-                #获取最长串（可以包括#）
+                #Get the longest length of text
                 if longestLength<len(linei):
                     longestLength=len(linei)
                     print linei,"\t",longestLength,imgPathi
@@ -57,12 +57,13 @@ if __name__ == '__main__':
     #extract lexiconlist
     #scan datasets and get the longest text so we get the "length" and the "charset"
     longestLength=0
-    imgFoldPath="/home/wjb/OCR/datasets/icdar2017_RCTW"
+    imgFoldPath="/home/wangjianbo_i/models/attention_ocr/datasets"
     previousDic={}
     previousList=[]
-    indexStart=[0,1000,2000,3000,4425]
-    indexEnd=[999,1999,2999,4424,5924]
-    for i in range(0,5):
+    indexStart=[0,1000,2000,3000,4425,5925]
+    indexEnd=[999,1999,2999,4424,5924,8033]
+    #train model
+    for i in range(0,len(indexStart)):
         imgFoldPathi=imgFoldPath+"/part%d"%(i+1)
         getICDAR2017RCTWlexiconList(imgFoldPathi, previousDic, previousList, indexStart[i], indexEnd[i],longestLength)
     print len(previousList)
@@ -70,14 +71,14 @@ if __name__ == '__main__':
     previousList.sort(key=lambda element: (len(element), element))
     # sorted(previousList)
     #wirite lexiolist to file
-    flexioList=open("RCTWlexiolist.txt","a")
+    flexioList=open("/home/wangjianbo_i/models/attention_ocr/python/datasets/data/rctw/RCTWlexiolist.txt","a")
     for wi in previousList:
         # print wi
         flexioList.write(wi.encode("utf-8")+"\t"+str(previousDic[wi]).encode("utf-8")+"\n")
         flexioList.flush()
     # print previousList
     # write charset
-    fcharset=open("RCTWcharset.txt","a")
+    fcharset=open("/home/wangjianbo_i/models/attention_ocr/python/datasets/data/rctw/RCTWcharset.txt","a")
     index=0
     for wi in previousList:
         fcharset.write(wi.encode("utf-8") + "\t" + str(previousDic[wi]).encode("utf-8") + "\n")

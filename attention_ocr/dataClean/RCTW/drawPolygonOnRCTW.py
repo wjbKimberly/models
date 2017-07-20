@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import re
 import time
+from resizeimage import resizeimage
 
 errorGroundTruthPath="/home/wjb/OCR/datasets/icdar2017_RCTW_cut/errorMessage.txt"
 
@@ -18,6 +19,7 @@ def drawPolygonOnRCTW(imgPath,newImgPath,polygonxList,polygonyList):
 
     print "(%d,%d),(%d,%d)"%(x0,y0,x1,y1)
     draw.polygon([(x0,y0),(x1,y0),(x1,y1),(x0,y1)], outline = (255, 0, 0))
+
 
     img.save(newImgPath)
     img.show()
@@ -41,7 +43,13 @@ def cutImageOnRCTW(imgPath,newImgPath,groundTruth,newGroundTruthPath,polygonxLis
     imgCut = img.crop((x0, y0, x1, y1))
     print x0,y0,x1,y1
     # imgCut.show()
-    imgCut.save(newImgPath)
+
+    #resize
+    cover = resizeimage.resize_cover(imgCut, [150, 150])
+    cover.save('test-image-cover.jpeg', imgCut.format)
+
+    # cover.show()
+    cover.save(newImgPath)
 
     #write groundTruth
     fw=open(newGroundTruthPath,"wb")
