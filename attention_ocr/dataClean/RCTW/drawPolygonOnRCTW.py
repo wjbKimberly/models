@@ -1,33 +1,14 @@
 from PIL import Image, ImageDraw
 import re
 import time
-from resizeimage import resizeimage
 
-errorGroundTruthPath="/home/wjb/OCR/datasets/icdar2017_RCTW_cut/errorMessage.txt"
+import cv2
+import numpy as np
 
-def drawPolygonOnRCTW(imgPath,newImgPath,polygonxList,polygonyList):
-    img = Image.open(imgPath)
-    draw = ImageDraw.Draw(img)
-    x=polygonxList
-    y=polygonyList
+errorGroundTruthPath="/home/wangjianbo_i/models/attention_ocr/resizedatasets/errorMessage.txt"
 
-    x0=min(x[0],x[3])
-    y0=min(y[0],y[1])
-
-    x1=max(x[1],x[2])
-    y1=max(y[2],y[3])
-
-    print "(%d,%d),(%d,%d)"%(x0,y0,x1,y1)
-    draw.polygon([(x0,y0),(x1,y0),(x1,y1),(x0,y1)], outline = (255, 0, 0))
-
-
-    img.save(newImgPath)
-    img.show()
-
-
-def cutImageOnRCTW(imgPath,newImgPath,groundTruth,newGroundTruthPath,polygonxList,polygonyList):
-    "https://stackoverflow.com/questions/15341538/numpy-opencv-2-how-do-i-crop-non-rectangular-region"
-
+def cutImageOnRCTW(imgPath,newImgPath,polygonxList,polygonyList):
+    #"https://stackoverflow.com/questions/15341538/numpy-opencv-2-how-do-i-crop-non-rectangular-region"
     #rectangle
     img = Image.open(imgPath)
     x = polygonxList
@@ -39,52 +20,24 @@ def cutImageOnRCTW(imgPath,newImgPath,groundTruth,newGroundTruthPath,polygonxLis
     x1 = max(x[1], x[2])
     y1 = max(y[2], y[3])
 
-
     imgCut = img.crop((x0, y0, x1, y1))
-    print x0,y0,x1,y1
-    # imgCut.show()
+    imgCut.save(newImgPath)
+    print x0,y0,x1,y1,"   ",newGroundTruthPath
 
     #resize
-    cover = resizeimage.resize_cover(imgCut, [150, 150])
-    cover.save('test-image-cover.jpeg', imgCut.format)
-
-    # cover.show()
-    cover.save(newImgPath)
-
-    #write groundTruth
-    fw=open(newGroundTruthPath,"wb")
-    fw.write(str(groundTruth))
-
-    #polygon
-    #get color of (0,0) as mask color
-    # img = Image.open(imgPath).convert("RGBA")
-    # maskColor = img.getpixel((0, 0))
-    # # print maskColor
-    # image = cv2.imread(imgPath, -1)
-    # # mask defaulting to black for 3-channel and transparent for 4-channel
-    # # (of course replace corners with yours)
-    #
-    # mask = np.zeros(image.shape, dtype=np.uint8)
-    # for i in range(0,len(mask)):
-    #     for j in range(0,len(mask[0])):
-    #         mask[i][j]=np.array(maskColor[0:3])
-    # roi_corners = np.array([[(x[0], y[0]), (x[1], y[1]), (x[2], y[2]),(x[3],y[3])]], dtype=np.int32)
-    # # fill the ROI so it doesn't get wiped out when the mask is applied
-    # channel_count = 4 # i.e. 3 or 4 depending on your image
-    #
-    # ignore_mask_color = maskColor
-    # cv2.fillConvexPoly(mask, roi_corners, ignore_mask_color)
-    # # from Masterfool: use cv2.fillConvexPoly if you know it's convex
-    #
-    # # apply the mask
-    # masked_image = cv2.bitwise_and(image, mask)
-    #
-    # # save the result
-    # cv2.imwrite(newImgPath, masked_image)
-
-
+    size=(150,150)
+    
+    from skimage import transform, data
+    import matplotlib.pyplot as plt
+    img = data.load(newImgPath)
+    dst = transform.resize(img, size)
+    from scipy.misc import imsave
+    imsave(newImgPath, dst)
+    
 
 def cutImgaeFold(imgFoldPath,newImgFoldPath,indexStart,indexEnd):
+    
+    fe=open(errorGroundTruthPath,"w")
     for imgIndex in range(indexStart, indexEnd + 1):
         imgPath = imgFoldPath + "/image_%d.jpg" % imgIndex
         groundTruthPathi=imgFoldPath + "/image_%d.txt" % imgIndex
@@ -116,17 +69,21 @@ def cutImgaeFold(imgFoldPath,newImgFoldPath,indexStart,indexEnd):
                 coordinateListi=re.findall(pattCoordinate,groundTruthLine)
                 polygonxList=[]
                 polygonyList=[]
-                for xi in [0,2,4,6]:
+		for xi in [0,2,4,6]:
                     polygonxList.append(float(coordinateListi[xi]))
                 for yi in [1,3,5,7]:
                     polygonyList.append(float(coordinateListi[yi]))
 
                 try:
-                    cutImageOnRCTW(imgPath, newImgPathi, groundTruth, newGroundTruthPathi, polygonxList,polygonyList)
-                except:
-                    fe=open(errorGroundTruthPath,"a")
+                    cutImageOnRCTW(imgPath, newImgPathi, newGroundTruthPathi, polygonxList,polygonyList)
+                
+		    #write groundTruth
+		    fw=open(newGroundTruthPath,"wb")
+	    	    fw.write(str(groundTruth))
+		except:
                     fe.write(str(imgPath)+"\t"+str(groundTruthLine)+"\n")
                     fe.flush()
+		
                 indexCurrent+=1
             else:
                 break
@@ -135,11 +92,11 @@ def cutImgaeFold(imgFoldPath,newImgFoldPath,indexStart,indexEnd):
 
 if __name__ == '__main__':
     #time record
-    ftime=open("/home/wjb/OCR/datasets/icdar2017_RCTW_cut/timerecord.txt","a")
+    ftime=open("/home/wangjianbo_i/models/attention_ocr/resizedatasets/timerecord.txt","w")
 
-    imgFoldPath="/home/wjb/OCR/datasets/icdar2017_RCTW"
-    newImgFoldPath = "/home/wjb/OCR/datasets/icdar2017_RCTW_cut"
-    indexStart=[0,1000,2000,3000,4425,5925]
+    imgFoldPath="/nfs/project/icdar2017_RCTW"
+    newImgFoldPath = "/home/wangjianbo_i/models/attention_ocr/resizedatasets"
+    indexStart=[999,1999,2000,4424,5924,5925]
     indexEnd=[999,1999,2999,4424,5924,8033]
 
 

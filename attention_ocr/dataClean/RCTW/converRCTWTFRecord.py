@@ -12,10 +12,10 @@ import PIL
 #Input
 #In summary, there are 6 datasets
 datasetIndexRange = 6 
-imgFoldPath = "/home/wangjianbo_i/models/attention_ocr/datasets/"
+imgFoldPath = "/nfs/project/wangjianbo_i/google_model/attention_ocr/resizedatasets"
 #train model tfrecords
-charsetPath = "/home/wangjianbo_i/models/attention_ocr/python/datasets/data/fsns/charset_size=3507.txt"
-output_path="/home/wangjianbo_i/models/attention_ocr/python/datasets/data/fsns/"
+charsetPath = "/nfs/project/wangjianbo_i/google_model/attention_ocr/python/datasets/data/rctw/charset_size=3507.txt"
+output_path="/nfs/project/wangjianbo_i/google_model/attention_ocr/python/datasets/data/rctw/"
 output_train_path=output_path+"train/train-00000-of-00512"
 output_test_path=output_path+"test/test-00000-of-00512"
 resize_width=150
@@ -62,6 +62,7 @@ def encode_utf8_string(text, charset, length, null_char_id):
 
 def extract_image(filename,  resize_height, resize_width):  
     image = cv2.imread(filename)  
+    imgshape= image.shape
     image = cv2.resize(image, (resize_height, resize_width))  
     b,g,r = cv2.split(image)         
     rgb_image = cv2.merge([r,g,b])       
@@ -88,7 +89,9 @@ def write_examples(image_data, output_path,num_of_views,charset,length,null_char
 	encoded_image = tf.image.encode_png(image_placeholder)
 	with tf.Session('') as sess:
 	    for imgPathi,text in image_data:
+		#resize: as images are already resized, this code could be omitted
 		img = extract_image(imgPathi, resize_height, resize_width)
+		#img = cv2.imread(imgPathi)
 		png_string = sess.run(encoded_image, feed_dict={image_placeholder: img})
 		#encoded_image = tf.image.encode_jpeg(img)
 		char_ids_padded, char_ids_unpadded = encode_utf8_string(text, charset, length, null_char_id)
@@ -113,17 +116,33 @@ def getimage_data(imgFoldPath):
     files = os.listdir(imgFoldPath)
     files.sort()
     index=0
-    fw=open("error.txt","a")
-    fw.write(str(files))
-    fw.flush()
     while index<len(files):
+	#pattImg=r"(.+?)\.jpg"
+	#pattTxt=r"(.+?)\.txt"
 	imgPathi=imgFoldPath+"/"+files[index]
-        imgLabelPath=imgFoldPath+"/"+files[index+1]
+        #if len(re.findall(imgPathi,pattImg))<=0:
+	#	print imgPathi
+	#	continue
+	imgLabelPath=imgFoldPath+"/"+files[index+1]
+        #if len(re.findall(imgLabelPath,pattTxt))<=0:
+	#	print imgLabelPath
+	#	continue
         index+=2
         # if not os.path.isdir(imgPathi):
         #     print imgPathi
         # if not os.path.isdir(imgLabelPath):
         #     print imgLabelPath
+	#judge shape
+	
+	image = cv2.imread(imgPathi)
+	try:
+		imgshape= image.shape
+		if imgshape!=(150,150,3):
+			print imgPathi
+			print imgshape
+	except:
+		print imgPathi,"doesn't exit!"
+		continue
 	labeli=open(imgLabelPath).read().decode("utf-8")
         # print labeli
         image_datai.append((imgPathi,labeli))
@@ -148,12 +167,8 @@ if __name__=='__main__':
     #create image_data
     image_train_data = []
     image_test_data=[]
-    #charsetstr=str(charsetReader.read())
-    #charsetstr=charsetstr.replace("\n", "")
-    #charset=json.loads(charsetstr)
     charset=loadCharset(charsetPath)
-    #for parti in range(2,datasetIndexRange+1):
-    for parti in range(1,2):
+    for parti in range(2,datasetIndexRange+1):
         imgFoldPathi=imgFoldPath+"/part%d"%parti
         # convert image to ndarray
         # combine ndarrays and labels to tuples
